@@ -2,9 +2,12 @@
 #include "mongodb.hpp"
 #include "collection.hpp"
 #include <flusspferd.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace flusspferd;
+using boost::lexical_cast;
 
 namespace  mongodb_flusspferd {
 
@@ -32,15 +35,10 @@ mongo_client::~mongo_client() { }
 
 void mongo_client::close() { }
 
-mongo::BSONObj mongo_client::object_to_bson(object obj) {
-  mongo::BSONObjBuilder b;
+namespace {
+  // Work out what kind of value `v` is and add it to the BSON (build) under a name of `key`
+  void append_bson_field(mongo::BSONObjBuilder &b, char const *key, value const &v) {
 
-  for (property_iterator it = obj.begin(); it != obj.end(); ++it) {
-    char const* key = it->to_string().c_str();
-
-    value const &v = obj.get_property(*it);
-
-    // Work out what kind of object val is
     if (v.is_undefined()){
       b.appendUndefined(key);
     }
@@ -65,6 +63,10 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
           mongo::ByteArray,
           (vec.empty() ? 0 : &vec[0])
         );
+      }
+      else if (o.is_array()) {
+        array a = o;
+        b.appendArray(key, mongo_client::array_to_bson( a ));
       }
       // Check if the object is a Date or a RegExp
       // TODO: This if would be better as instance_of. We dont have it in flusspferd 0.8 though :(
@@ -101,6 +103,26 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
       // Default, stringify the object
       b.append(key, v.to_std_string());
     }
+  }
+
+}
+
+mongo::BSONObj mongo_client::array_to_bson(array arr) {
+  mongo::BSONObjBuilder b;
+
+  std::size_t len = arr.size();
+  for (std::size_t n = 0; n < len; ++n) {
+    append_bson_field(b, lexical_cast<std::string>(n).c_str(), arr.get_element(n));
+  }
+  return b.obj();
+}
+
+mongo::BSONObj mongo_client::object_to_bson(object obj) {
+  mongo::BSONObjBuilder b;
+
+  for (property_iterator it = obj.begin(); it != obj.end(); ++it) {
+
+    append_bson_field(b, it->to_string().c_str(), obj.get_property(*it));
   }
 
   return b.obj();

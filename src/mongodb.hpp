@@ -24,7 +24,8 @@ public:
   mongo_client(flusspferd::object const &obj, flusspferd::call_context &x);
   virtual ~mongo_client();
 
-  mongo::BSONObj object_to_bson(object obj);
+  static mongo::BSONObj object_to_bson(flusspferd::object obj);
+  static mongo::BSONObj array_to_bson(flusspferd::array arr);
 
   void close();
 
