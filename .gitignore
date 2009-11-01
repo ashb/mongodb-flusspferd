@@ -1,6 +1,7 @@
 .*.swp
 
-build/
-obj/
-Makefile
-*.make
+/docs/
+/build/
+/obj/
+/Makefile
+/*.make
