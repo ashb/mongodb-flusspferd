@@ -59,7 +59,12 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
         binary &blob = flusspferd::get_native<binary>(v.get_object());        
         binary::vector_type const &vec = blob.get_const_data();
 
-        b.appendBinDataArray(key, (char const*)(vec.empty() ? 0 : &vec[0]), vec.size());
+        b.appendBinData(
+          key,
+          vec.size(),
+          mongo::ByteArray,
+          (vec.empty() ? 0 : &vec[0])
+        );
       }
       // Check if the object is a Date or a RegExp
       // TODO: This if would be better as instance_of. We dont have it in flusspferd 0.8 though :(
