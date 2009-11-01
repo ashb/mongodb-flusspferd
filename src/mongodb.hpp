@@ -4,6 +4,7 @@
 
 
 #include <flusspferd.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <mongo/client/dbclient.h>
 
@@ -33,7 +34,8 @@ public:
   void close();
 
   object find(flusspferd::string ns, flusspferd::object query, 
-              flusspferd::object fields, int limit, int size);
+              boost::optional<flusspferd::object> fields,
+              boost::optional<int> limit, boost::optional<int> skip);
 
   void insert(flusspferd::string ns, flusspferd::object obj);
 

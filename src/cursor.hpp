@@ -5,6 +5,7 @@
 
 #include <flusspferd.hpp>
 #include <boost/shared_ptr.hpp>
+#include <mongo/client/dbclient.h>
 
 namespace mongodb_flusspferd {
 
@@ -19,12 +20,14 @@ FLUSSPFERD_CLASS_DESCRIPTION(
     )
 ) {
 public:
-  cursor(flusspferd::object const &obj);
+  cursor(flusspferd::object const &obj, boost::shared_ptr<mongo::DBClientCursor> ptr);
 
   ~cursor();
 
   flusspferd::object next();
 protected:
+
+  boost::shared_ptr<mongo::DBClientCursor> cursor_;
 };
 
 }

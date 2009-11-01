@@ -1,13 +1,16 @@
 
 #include "mongodb.hpp"
 #include "collection.hpp"
+#include "cursor.hpp"
 #include <flusspferd.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <memory>
 
 using namespace flusspferd;
 using boost::lexical_cast;
+using boost::optional;
 
 namespace  mongodb_flusspferd {
 
@@ -16,7 +19,8 @@ FLUSSPFERD_LOADER(container, context) {
   // Ensure the binary module is loaded
   context.call("require", "binary");
 
-  load_class<mongo_client>(container);
+  object ctor = load_class<mongo_client>(container);
+  load_class<cursor>(ctor);
 }
 
 mongo_client::mongo_client(object const &obj, call_context &x)
@@ -214,9 +218,24 @@ array mongo_client::bson_to_array(mongo::BSONElement e) {
   return a;
 }
 
-object mongo_client::find(string ns, object query, object fields, int limit, int size) {
 
-  mongo::BSONObj bson = object_to_bson(query);
+object mongo_client::find(string ns, object query, optional<object> fields, optional<int> limit, optional<int> skip) {
+
+  mongo::BSONObj field_bson,query_bson = object_to_bson(query);
+
+  if (fields)
+    field_bson = object_to_bson(*fields);
+
+  boost::shared_ptr<mongo::DBClientCursor> cursor_ptr(connection_.query(
+    ns.to_string(),
+    query_bson,
+    limit.get_value_or(0),
+    skip.get_value_or(0),
+    // Empty object
+    fields ? &field_bson : 0
+  ));
+
+  return create_native_object<cursor>(object(), cursor_ptr);
 }
 
 void mongo_client::insert(string ns, object obj) {
