@@ -249,12 +249,12 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
 }
 
 object mongo_client::bson_to_object(mongo::BSONObj bson) {
-  std::set<std::string> fields;
-  bson.getFieldNames(fields);
 
   object o = create_object();
-  BOOST_FOREACH( std::string const &key, fields) {
-    o.set_property(key,  bson_ele_to_object(bson.getField(key)));
+  mongo::BSONObjIterator it(bson);
+  while ( it.more() ) {
+    mongo::BSONElement e = it.next();
+    o.set_property(e.fieldName(),  bson_ele_to_object(e));
   }
 
   return o;
@@ -263,17 +263,17 @@ object mongo_client::bson_to_object(mongo::BSONObj bson) {
 array mongo_client::bson_to_array(mongo::BSONElement e) {
   mongo::BSONObj bson = e.embeddedObject();
 
-  std::set<std::string> fields;
-  bson.getFieldNames(fields);
+  mongo::BSONObjIterator it(bson);
 
   array a = create_array();
-  BOOST_FOREACH( std::string const &key, fields) {
-    value v = bson_ele_to_object(bson.getField(key));
+  while ( it.more() ) {
+    mongo::BSONElement e = it.next();
+    value v = bson_ele_to_object(e);
     try {
-      a.set_element(lexical_cast<size_t>(key), v);
+      a.set_element(lexical_cast<size_t>(e.fieldName()), v);
     }
     catch (boost::bad_lexical_cast) {
-      a.set_property(key, v);
+      a.set_property(e.fieldName(), v);
     }
   }
 
