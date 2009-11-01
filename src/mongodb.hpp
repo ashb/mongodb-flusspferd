@@ -27,6 +27,9 @@ public:
   static mongo::BSONObj object_to_bson(flusspferd::object obj);
   static mongo::BSONObj array_to_bson(flusspferd::array arr);
 
+  static flusspferd::object bson_to_object(mongo::BSONObj bson);
+  static flusspferd::array bson_to_array(mongo::BSONElement e);
+
   void close();
 
   object find(flusspferd::string ns, flusspferd::object query, 

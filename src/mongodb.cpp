@@ -14,7 +14,7 @@ namespace  mongodb_flusspferd {
 
 FLUSSPFERD_LOADER(container, context) {
   // Ensure the binary module is loaded
-  //context.call("require", "binary");
+  context.call("require", "binary");
 
   load_class<mongo_client>(container);
 }
@@ -105,6 +105,60 @@ namespace {
     }
   }
 
+  value bson_ele_to_object(mongo::BSONElement e) {
+    mongo::BSONType type = e.type();
+
+    using namespace mongo;
+    switch (type) {
+      case String:
+        return value(e.str());
+
+      case Object:
+        return mongo_client::bson_to_object(e.embeddedObject());
+
+      case Array:
+        return mongo_client::bson_to_array(e);
+
+      case BinData:
+      {
+        int len = 0;
+        unsigned char const *data = reinterpret_cast<unsigned char const*>(e.binData(len));
+
+        return create_native_object<byte_string>(object(), data, len);
+      }
+      case Undefined:
+        return value();
+
+      case Bool:
+        return value(e.boolean());
+
+      case Date:
+      {
+        unsigned long long d = e.date();
+
+        // TODO: Is there any way that isn't so truely horrible?
+        std::string js = "new Date(";
+        return evaluate(js + boost::lexical_cast<std::string>(d) + ")");
+      }
+      case jstNULL:
+        return object();
+
+      case RegEx:
+        return global().call("RegExp", e.regex(), e.regexFlags());
+
+      case NumberInt:
+      case NumberDouble:
+        return value(e.number());
+
+      case jstOID:
+        return value(e.__oid().str());
+      default:
+        boost::format f("Unknown BSONElement type %1%");
+        throw flusspferd::exception( boost::str( f % type ) );
+        break;
+    }
+
+  }
 }
 
 mongo::BSONObj mongo_client::array_to_bson(array arr) {
@@ -126,6 +180,38 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
   }
 
   return b.obj();
+}
+
+object mongo_client::bson_to_object(mongo::BSONObj bson) {
+  std::set<std::string> fields;
+  bson.getFieldNames(fields);
+
+  object o = create_object();
+  BOOST_FOREACH( std::string const &key, fields) {
+    o.set_property(key,  bson_ele_to_object(bson.getField(key)));
+  }
+
+  return o;
+}
+
+array mongo_client::bson_to_array(mongo::BSONElement e) {
+  mongo::BSONObj bson = e.embeddedObject();
+
+  std::set<std::string> fields;
+  bson.getFieldNames(fields);
+
+  array a = create_array();
+  BOOST_FOREACH( std::string const &key, fields) {
+    value v = bson_ele_to_object(bson.getField(key));
+    try {
+      a.set_element(lexical_cast<size_t>(key), v);
+    }
+    catch (boost::bad_lexical_cast) {
+      a.set_property(key, v);
+    }
+  }
+
+  return a;
 }
 
 object mongo_client::find(string ns, object query, object fields, int limit, int size) {
