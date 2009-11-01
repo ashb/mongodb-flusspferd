@@ -11,8 +11,65 @@
 using namespace flusspferd;
 using boost::lexical_cast;
 using boost::optional;
+using boost::format;
 
 namespace  mongodb_flusspferd {
+
+static const format oid_to_str_fmt_("MongoDB.OID('%1%')");
+static const format oid_to_source_fmt_("require('mongodb').MongoDB.OID('%1%')");
+
+FLUSSPFERD_CLASS_DESCRIPTION(
+  mongo_oid,
+  (full_name, "MongoDB.OID")
+  (constructor_name, "OID")
+  (methods,
+    ("toString", bind, to_string)
+    ("toSource", bind, to_source)
+    ("valueOf", bind, value_of)
+  )
+) {
+protected:
+  mongo::OID oid_;
+
+public:
+
+  // C++/native ctor
+  mongo_oid(object const &obj, mongo::OID oid)
+    : base_type(obj),
+      oid_(oid)
+  { }
+
+  // Javascript ctor
+  mongo_oid(object const &obj, call_context &x)
+    : base_type(obj)
+  {
+    if (x.arg.size() == 0) {
+      oid_.init();
+    }
+    else {
+      std::string s = x.arg[0].to_std_string();
+      oid_.init(s);
+    }
+  }
+
+  ~mongo_oid() { }
+
+  string to_string() {
+    return boost::str( format(oid_to_str_fmt_) % oid_.str() );
+  }
+
+  string to_source() {
+    return boost::str( format(oid_to_source_fmt_) % oid_.str() );
+  }
+
+  string value_of() {
+    return oid_.str();
+  }
+
+  mongo::OID const *get_oid() {
+    return &oid_;
+  }
+};
 
 
 FLUSSPFERD_LOADER(container, context) {
@@ -20,6 +77,7 @@ FLUSSPFERD_LOADER(container, context) {
   context.call("require", "binary");
 
   object ctor = load_class<mongo_client>(container);
+  load_class<mongo_oid>(ctor);
   load_class<cursor>(ctor);
 }
 
@@ -58,7 +116,7 @@ namespace {
 
       // A blob
       if (is_native<binary>(o) ) {
-        binary &blob = flusspferd::get_native<binary>(v.get_object());        
+        binary &blob = flusspferd::get_native<binary>(o);
         binary::vector_type const &vec = blob.get_const_data();
 
         b.appendBinData(
@@ -67,6 +125,10 @@ namespace {
           mongo::ByteArray,
           (vec.empty() ? 0 : &vec[0])
         );
+      }
+      else if (is_native<mongo_oid>(o)) {
+        mongo_oid &oid = flusspferd::get_native<mongo_oid>(o);
+        b.appendOID(key, const_cast<mongo::OID*>( oid.get_oid() ) );
       }
       else if (o.is_array()) {
         array a = o;
@@ -155,9 +217,9 @@ namespace {
         return value(e.number());
 
       case jstOID:
-        return value(e.__oid().str());
+        return create_native_object<mongo_oid>(object(), e.__oid());
       default:
-        boost::format f("Unknown BSONElement type %1%");
+        format f("Unknown BSONElement type %1%");
         throw flusspferd::exception( boost::str( f % type ) );
         break;
     }
