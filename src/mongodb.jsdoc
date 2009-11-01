@@ -1,0 +1,85 @@
+// vim:filetype=javascript:
+
+/**
+ * == exports ==
+ *
+ * Exports from the `mongodb` module
+ **/
+
+/** section: exports
+ *  class MongoDB
+ *
+ *  A MongoDB client connection
+ **/
+
+/**
+ * new MongoDB(server)
+ * - server (String): server to connect to, of the form "host:port"
+ *
+ * Connect to the given mongoDB sever
+ **/
+
+
+/**
+ * MongoDB#find(ns, query[, fields[, limit[, skip]]]) -> MongoDB.Cursor
+ * - ns (String): "db.collection"
+ * - query (Object): query criteria
+ * - fields (Object): select only certain fields
+ * - limit (Number): Only return `limit` documents (0 = unlimited)
+ * - skip (Number): Skip the first `skip` documents
+ *
+ * Perform a query against `ns`
+ **/
+
+/**
+ * MongoDB#insert(ns, object) -> undefined
+ * - ns (String): "db.collection"
+ * - object (Object): what to insert into the collection
+ *
+ * Store `object` in the collection `ns`.
+ **/
+
+/** section: exports
+ *  class MongoDB.Cursor
+ *
+ *  This class is not directly constructible form javascript - use
+ *  [[MongoDB#find]] to create cursors.
+ **/
+
+/**
+ * MongoDB.Cursor#next() -> Object | null
+ *
+ * Return the next document form the cursor, or `null` if none are left.
+ **/
+
+
+/** section: exports
+ *  class MongoDB.OID
+ *
+ *  A wrapper around a mongodb ObjectId. 
+ *
+ *  Most objects that get stored in MongoDB will have an OID allocated to them
+ *  and stored in the `_id` field if there is no ID present.
+ **/
+
+/**
+ * new MongoDB.OID([oid])
+ * - oid (String): 24 char hex string OID to use
+ *
+ * Construct a new MongoDB OID. If `oid` is passed, that will be used,
+ * otherwise a new OID will be generated.
+ **/
+
+/**
+ * MongoDB.OID#toString() -> String
+ **/
+
+/**
+ * MongoDB.OID#toSource() -> String
+ **/
+
+/**
+ * MongoDB.OID#valueOf() -> String
+ *
+ * Get the OID in form of a 24 charcter hex string.
+ **/
