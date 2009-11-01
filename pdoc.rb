@@ -8,7 +8,8 @@ begin
   files << {
     :output => "docs",
     :templates => "../prototype-pdoc-template/html",
-    :syntax_highlighter => :none
+    :syntax_highlighter => :none,
+    :index_page => 'README.markdown'
   }
   PDoc::Runner.new(*files).run
 rescue PDoc::ParseError => e

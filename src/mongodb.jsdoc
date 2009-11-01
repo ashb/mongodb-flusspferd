@@ -3,7 +3,7 @@
 /**
  * == exports ==
  *
- * Exports from the `mongodb` module
+ * Exports from the `mongodb` module.
  **/
 
 /** section: exports
