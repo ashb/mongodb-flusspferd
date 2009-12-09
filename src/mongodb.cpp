@@ -12,6 +12,7 @@ using namespace flusspferd;
 using boost::lexical_cast;
 using boost::optional;
 using boost::format;
+namespace bf = boost::fusion;
 
 namespace  mongodb_flusspferd {
 
@@ -135,20 +136,13 @@ namespace {
         b.appendArray(key, mongo_client::array_to_bson( a ));
       }
       // Check if the object is a Date or a RegExp
-      // TODO: This if would be better as instance_of. We dont have it in flusspferd 0.8 though :(
-      else if (global().get_property_object("Date")
-                       .get_property_object("prototype")
-                       .call("isPrototypeOf", v)
-                       .to_boolean()) 
+      else if (o.instance_of(global().get_property_object("Date")))
       {
 
         unsigned long long d = o.call("valueOf").to_integral_number(64, false);
         b.appendDate(key, d);
       }
-      else if (global().get_property_object("RegExp")
-                       .get_property_object("prototype")
-                       .call("isPrototypeOf", v)
-                       .to_boolean()) 
+      else if (o.instance_of(global().get_property_object("RegExp")))
       {
         std::string flags;
 
@@ -190,7 +184,7 @@ namespace {
         int len = 0;
         unsigned char const *data = reinterpret_cast<unsigned char const*>(e.binData(len));
 
-        return create_native_object<byte_string>(object(), data, len);
+        return create<byte_string>(bf::make_vector(data, len));
       }
       case Undefined:
         return value();
@@ -202,7 +196,8 @@ namespace {
       {
         unsigned long long d = e.date();
 
-        // TODO: Is there any way that isn't so truely horrible?
+        // TODO: Is there any way that isn't so truely horrible? Not yet.
+        //       https://bugzilla.mozilla.org/show_bug.cgi?id=480850
         std::string js = "new Date(";
         return evaluate(js + boost::lexical_cast<std::string>(d) + ")");
       }
@@ -217,10 +212,9 @@ namespace {
         return value(e.number());
 
       case jstOID:
-        return create_native_object<mongo_oid>(object(), e.__oid());
+        return create<mongo_oid>(bf::make_vector(e.__oid()));
       default:
-        format f("Unknown BSONElement type %1%");
-        throw flusspferd::exception( boost::str( f % type ) );
+        throw flusspferd::exception( format("Unknown BSONElement type %1%") % type );
         break;
     }
 
@@ -250,7 +244,7 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
 
 object mongo_client::bson_to_object(mongo::BSONObj bson) {
 
-  object o = create_object();
+  object o = create<object>();
   mongo::BSONObjIterator it(bson);
   while ( it.more() ) {
     mongo::BSONElement e = it.next();
@@ -265,7 +259,7 @@ array mongo_client::bson_to_array(mongo::BSONElement e) {
 
   mongo::BSONObjIterator it(bson);
 
-  array a = create_array();
+  array a = create<array>();
   while ( it.more() ) {
     mongo::BSONElement e = it.next();
     value v = bson_ele_to_object(e);
@@ -297,7 +291,7 @@ object mongo_client::find(string ns, object query, optional<object> fields, opti
     fields ? &field_bson : 0
   ));
 
-  return create_native_object<cursor>(object(), cursor_ptr);
+  return create<cursor>(bf::make_vector(cursor_ptr));
 }
 
 void mongo_client::insert(string ns, object obj) {

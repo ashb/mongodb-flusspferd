@@ -17,11 +17,14 @@ solution "mongodb"
     includedirs { _OPTIONS["mongodb-root"] .. "/include" }
     libdirs { _OPTIONS["mongodb-root"] .. "/lib" }
   end
+
+  configuration "linux or macosx"
+    buildoptions{"`pkg-config --cflags flusspferd`"}
   
   configuration "Release"
-      flags { "Optimize" }
+    flags { "Optimize" }
   configuration "Debug"
-      flags { "Symbols" }
+    flags { "Symbols" }
  
   configuration() -- all configurations
 
@@ -31,16 +34,6 @@ solution "mongodb"
     language "C++"
     files { "src/*.cpp" }
 
-    links { "flusspferd", "mongoclient", "boost_thread-gcc40-mt", "boost_system-gcc40-mt" }
-
-    configuration { "not windows" }
-      includedirs { 
-        "/usr/local/include/boost-1_37",
-        "/Users/ash/code/js/mozjs_debug/include"
-      }
-
-      libdirs {
-        "/Users/ash/code/js/mozjs_debug/lib"
-      }
+    links { "flusspferd", "mongoclient", "boost_thread-mt", "boost_system-mt" }
 
 
