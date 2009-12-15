@@ -19,7 +19,16 @@ object cursor::next() {
     // return null
     return object();
 
-  return mongo_client::bson_to_object( cursor_->next() );
+  mongo::BSONObj n = cursor_->next();
+  mongo::BSONElement e = n.firstElement();
+
+  root_object o(mongo_client::bson_to_object( n ));
+
+  if (strcmp(e.fieldName(), "$err") == 0) {
+    throw exception(o.get_property("$err").to_string());
+  }
+
+  return o;
 }
 
 } // namespace mongodb_flusspferd
