@@ -24,6 +24,8 @@ FLUSSPFERD_CLASS_DESCRIPTION(
     ("getDatabaseNames", bind, get_dbs)
     ("getCollectionNames", bind, get_collections)
     ("exists", bind, exists)
+
+    ("runCommand", bind, run_cmd)
   )
 ) {
 public:
@@ -57,6 +59,8 @@ public:
   object get_dbs();
   object get_collections(std::string const &ns);
   bool exists(std::string const &ns);
+
+  object run_cmd(std::string const &db, object cmd);
 protected:
   mongo::DBClientConnection connection_;
 

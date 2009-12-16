@@ -355,4 +355,10 @@ bool mongo_client::exists(std::string const &ns) {
   return connection_.exists(ns);
 }
 
+object mongo_client::run_cmd(std::string const &db, object cmd) {
+  BSONObj out;
+  connection_.runCommand(db, object_to_bson(cmd), out);
+  return bson_to_object(out);
+}
+
 } // namespace mongodb_flusspferd

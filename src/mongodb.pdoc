@@ -170,6 +170,18 @@
  *  Queries if the specified namespace eixsts.
  **/
 
+/**
+ *  MongoDB#runCommand(db, command) -> Object
+ *  - db (String): database name. Use "admin" for global administrative
+ *    commands
+ *  - command (Object): command object to execute.
+ *
+ *  Run a command against the server. See [MongoDB docs][mongo_command] for a
+ *  full list of database commands.
+ *
+ *  [mongo_command]: http://www.mongodb.org/display/DOCS/List+of+Database+Commands
+ **/
+
 /** section: exports
  *  class MongoDB.Cursor
  *
