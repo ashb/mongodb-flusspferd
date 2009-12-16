@@ -157,8 +157,7 @@ namespace {
         b.appendRegex(key, o.get_property("source").to_std_string(), flags);
       }
       else {
-        // TODO: Maybe this should recurse and create sub objects
-        b.append(key, v.to_std_string());
+        b.append(key, mongo_client::object_to_bson(o));
       }
     } else {
       // Default, stringify the object
@@ -233,7 +232,7 @@ BSONObj mongo_client::array_to_bson(array arr) {
 }
 
 BSONObj mongo_client::object_to_bson(object obj) {
-  if (obj.is_null());
+  if (obj.is_null())
     return BSONObj();
 
   mongo::BSONObjBuilder b;
@@ -327,7 +326,6 @@ void mongo_client::insert(std::string const &ns, object obj) {
 void mongo_client::update(std::string const &ns, object query,
     object obj, optional<bool> upsert, optional<bool> multi)
 {
-  // WTF is upsert? its in the mongo C++ api. update-or-insert it turns out
   connection_.update(
     ns,
     object_to_bson(query),
