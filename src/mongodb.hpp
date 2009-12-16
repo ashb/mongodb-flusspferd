@@ -17,8 +17,13 @@ FLUSSPFERD_CLASS_DESCRIPTION(
   (methods,
     ("close", bind, close)
     ("find", bind, find)
+    ("findOne", bind, find_one)
     ("insert", bind, insert)
     ("update", bind, update)
+    ("remove", bind, remove)
+    ("getDatabaseNames", bind, get_dbs)
+    ("getCollectionNames", bind, get_collections)
+    ("exists", bind, exists)
   )
 ) {
 public:
@@ -33,18 +38,25 @@ public:
 
   void close();
 
-  object find(flusspferd::string ns, flusspferd::object query, 
-              boost::optional<flusspferd::object> fields,
-              boost::optional<int> limit, boost::optional<int> skip);
+  object find(std::string const &ns, flusspferd::object query,
+              boost::optional<int> limit, boost::optional<int> skip,
+              boost::optional<flusspferd::object> fields);
 
-  void insert(flusspferd::string ns, flusspferd::object obj);
+  object find_one(std::string const &ns, flusspferd::object query,
+              boost::optional<flusspferd::object> fields);
 
-  void update(flusspferd::string ns, flusspferd::object query, 
-              flusspferd::object obj, boost::optional<bool> upsert); 
-              // WTF is upsert? its in the mongo C++ api
+  void insert(std::string const &ns, flusspferd::object obj);
 
-  void remote(flusspferd::string ns, flusspferd::object query, 
+  void update(std::string const &ns, flusspferd::object query,
+              flusspferd::object obj, boost::optional<bool> upsert,
+              boost::optional<bool> multi);
+
+  void remove(std::string const &ns, flusspferd::object query,
               boost::optional<bool> just_one);
+
+  object get_dbs();
+  object get_collections(std::string const &ns);
+  bool exists(std::string const &ns);
 protected:
   mongo::DBClientConnection connection_;
 

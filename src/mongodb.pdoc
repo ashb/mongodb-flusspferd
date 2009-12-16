@@ -9,7 +9,15 @@
 /** section: exports
  *  class MongoDB
  *
- *  A MongoDB client connection
+ *  A MongoDB client connection.
+ *
+ *  Before getting started with MongoDB it is worth reading the 
+ *  MongoDB page on [schema design] to get a better idea about
+ *  how to structure and store yourt data better: typically you will normalize
+ *  your data less when using a document database when you would with a
+ *  relational database.
+ *
+ *  [schema design]: http://www.mongodb.org/display/DOCS/Schema+Design
  **/
 
 /**
@@ -19,24 +27,147 @@
  * Connect to the given mongoDB sever
  **/
 
-
 /**
- * MongoDB#find(ns, query[, fields[, limit[, skip]]]) -> MongoDB.Cursor
- * - ns (String): "db.collection"
- * - query (Object): query criteria
- * - fields (Object): select only certain fields
- * - limit (Number): Only return `limit` documents (0 = unlimited)
- * - skip (Number): Skip the first `skip` documents
+ *  MongoDB#find(ns, query[, limit[, skip[, fields]]]) -> MongoDB.Cursor
+ *  - ns (String): namespace to query in the form of "db.collection.collection"
+ *  - query (Object): query criteria
+ *  - limit (Number): Only return `limit` documents (0 = unlimited)
+ *  - skip (Number): Skip the first `skip` documents (0 = skip nothing)
+ *  - fields (Object): select only certain fields
  *
- * Perform a query against `ns`
+ *  Perform a query against `ns` returning a cursor of results.
+ *
+ *  MongoDB supports fairly complex queries. A few examples are included below,
+ *  but this is far from a complete selection:
+ *
+ *      { a : { $gt : 3 } } // a &gt; 3
+ *      { shipping : { carrier: "usps" } } // matches if the shipping object contains only carrier
+ *      { "shipping.carrier" : "usps" } // matches when shipping.carrier == "usps"
+ *      { "field" : { $gt: value1, $lt: value2 } } // value1 &lt; field &lt; value2
+ *      { x : { $ne : 3 } } // x != 3
+ *      { j : {$in: [2,4,6]} } // j is a value in the given array
+ *      { name : /acme.*corp/i } //
+ *
+ *  The full list of operators understood is:
+ *
+ *  - `$gt`: greater than
+ *  - `$lt`: less than
+ *  - `$gte`: greater than or equal
+ *  - `$lte`: less than or equal
+ *  - `$ne`: not equal
+ *  - `$in`: field is in array
+ *  - `$nin`: field is not in array
+ *  - `$mod`: modulo divison
+ *  - `$all`: field must be an array containing all values in provided array
+ *  - `$size`: match the size of an array
+ *
+ *  For regular expressions of the form `^normalchars.*` , the database
+ *  will use an index when available and appropriate.
+ *
+ *  See the [mongodb_queries MongoDB documentation] for more details of how to
+ *  do specify queries and for more advanced features.
+ *
+ *  [mongodb_queries]: http://www.mongodb.org/display/DOCS/Queries+and+Cursors "Queries and Cursors"
  **/
 
 /**
- * MongoDB#insert(ns, object) -> undefined
- * - ns (String): "db.collection"
- * - object (Object): what to insert into the collection
+ *  MongoDB#findOne(ns, query[, fields]) -> Object
+ *  - ns (String): "db.collection"
+ *  - query (Object): query criteria
+ *  - fields (Object): select only certain fields
  *
- * Store `object` in the collection `ns`.
+ *  Perform a query against `ns` and return the first object matched. See
+ *  [[MongoDB#find]] for syntax of `query`.
+ **/
+
+/**
+ *  MongoDB#insert(ns, object) -> undefined
+ *  - ns (String): "db.collection"
+ *  - object (Object): what to insert into the collection
+ *
+ *  Store `object` in the collection `ns`.
+ **/
+
+/**
+ *  MongoDB#update(ns, criteria, objNew[, upsert[, multi]]) -> undefined
+ *  - ns (String): "db.collection"
+ *  - criteria (Object): query which selects the record(s) to update
+ *  - objNew (Object): updated object or $ operators (e.g., $inc) which
+ *    manipulate the object
+ *  - upsert (Boolean): if this should be an "upsert"; that is, if the record
+ *    does not exist, insert it
+ *  - multi (Boolean): if all documents matching criteria should be updated
+ *    (the default is to only update the first document found)
+ *
+ *  Upsert means "update if present; insert is missing". The upsert feature is
+ *  useful when using "modifier operations" (see below).
+ *
+ *  ##### Modifier Operations #
+ *
+ *  Modifier operations are performance enhancement techniques useful when
+ *  updating an existing object in certain ways, such as incrementing a number.
+ *  
+ *
+ *  - `{ $inc: { field: value } }`
+ *  : increments `field` by the number value if `field` is present in the object,
+ *    otherwise sets `field` to the number `value`.
+ *  - `{ $set: { field: value } }`
+ *  : sets `field` to `value`. All datatypes are supported with $set.
+ *  - `{ $push: { field: value } }`
+ *  : appends `value` to `field`, if `field` is an existing array, otherwise
+ *    sets `field` to the array [value] if field is not present. If field is
+ *    present but is not an array, an error condition is raised.
+ *  - `{ $pushAll: { field: array } }`
+ *  : similarly to `$push`, but push multiple values at once.
+ *  - `{ $pop: { field: 1 } }`
+ *  : removes the last element in the array `field`.
+ *  - `{ $pop: { field: -1 } }`
+ *  : removes the first element in the array `field`.
+ *  - `{ $pull: { field: value } }`
+ *  : removes all occurrences of `value` from `field` if it is an array. If
+ *    `field` is present but is not an array, an error condition is raised. 
+ *  - `{ $pullAll: { field: array } }`
+ *  : similarl to `$pull`, but remove all occurrences of each value in `array`.
+ *
+ *  You may use upsert with a modifier operation. In such a case, the modifiers
+ *  will be applied to the update criteria member and the resulting object will
+ *  be inserted. 
+ *
+ *  ##### Checking the Outcome of an Update Request #
+ *
+ *  As described above, a non-upsert update may or may not modify an existing
+ *  object. An upsert will either modify an existing object or insert a new
+ *  object. The client may determine if its most recent message on a connection
+ *  updated an existing object, by subsequently issuing a `getlasterror`
+ *  command `findOne(ns, {getlasterror:1} )`. If the result of the
+ *  `getlasterror` command contains an `updatedExisting` field, the last
+ *  message on the connection was an update request. If the `updatedExisting`
+ *  field's value is true, that update request caused an existing object to be
+ *  updated; if `updatedExisting` is false, no existing object was updated.
+ **/
+
+/**
+ *  MongoDB#remove() -> undefined
+ **/
+
+/**
+ *  MongoDB#getCollectionNames(db) -> Array
+ *  - db (String): databnase name
+ *
+ *  Get a list of all collections in the specified database.
+ **/
+
+/**
+ *  MongoDB#getDatabaseNames() -> Array
+ *
+ *  Get a list of all current databases
+ **/
+
+/**
+ *  MongoDB#exists(ns) -> Boolean
+ *  - ns (String): namespace
+ *
+ *  Queries if the specified namespace eixsts.
  **/
 
 /** section: exports

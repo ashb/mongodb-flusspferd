@@ -13,11 +13,12 @@ using boost::lexical_cast;
 using boost::optional;
 using boost::format;
 namespace bf = boost::fusion;
+using mongo::BSONObj;
 
 namespace  mongodb_flusspferd {
 
 static const format oid_to_str_fmt_("MongoDB.OID('%1%')");
-static const format oid_to_source_fmt_("require('mongodb').MongoDB.OID('%1%')");
+static const format oid_to_source_fmt_("require('mongodb').OID('%1%')");
 
 FLUSSPFERD_CLASS_DESCRIPTION(
   mongo_oid,
@@ -48,7 +49,7 @@ public:
       oid_.init();
     }
     else {
-      std::string s = x.arg[0].to_std_string();
+      std::string const &s = x.arg[0].to_std_string();
       oid_.init(s);
     }
   }
@@ -78,8 +79,8 @@ FLUSSPFERD_LOADER(container, context) {
   context.call("require", "binary");
 
   object ctor = load_class<mongo_client>(container);
-  load_class<mongo_oid>(ctor);
-  load_class<cursor>(ctor);
+  load_class<mongo_oid>(container);
+  load_class<cursor>(container);
 }
 
 mongo_client::mongo_client(object const &obj, call_context &x)
@@ -221,7 +222,7 @@ namespace {
   }
 }
 
-mongo::BSONObj mongo_client::array_to_bson(array arr) {
+BSONObj mongo_client::array_to_bson(array arr) {
   mongo::BSONObjBuilder b;
 
   std::size_t len = arr.size();
@@ -231,7 +232,10 @@ mongo::BSONObj mongo_client::array_to_bson(array arr) {
   return b.obj();
 }
 
-mongo::BSONObj mongo_client::object_to_bson(object obj) {
+BSONObj mongo_client::object_to_bson(object obj) {
+  if (obj.is_null());
+    return BSONObj();
+
   mongo::BSONObjBuilder b;
 
   for (property_iterator it = obj.begin(); it != obj.end(); ++it) {
@@ -242,24 +246,26 @@ mongo::BSONObj mongo_client::object_to_bson(object obj) {
   return b.obj();
 }
 
-object mongo_client::bson_to_object(mongo::BSONObj bson) {
+object mongo_client::bson_to_object(BSONObj bson) {
 
-  object o = create<object>();
+  root_object o(create<object>());
+
   mongo::BSONObjIterator it(bson);
   while ( it.more() ) {
     mongo::BSONElement e = it.next();
-    o.set_property(e.fieldName(),  bson_ele_to_object(e));
+
+    o.set_property(e.fieldName(), bson_ele_to_object(e));
   }
 
   return o;
 }
 
 array mongo_client::bson_to_array(mongo::BSONElement e) {
-  mongo::BSONObj bson = e.embeddedObject();
+  BSONObj bson = e.embeddedObject();
 
   mongo::BSONObjIterator it(bson);
 
-  array a = create<array>();
+  root_array a(create<array>());
   while ( it.more() ) {
     mongo::BSONElement e = it.next();
     value v = bson_ele_to_object(e);
@@ -275,15 +281,16 @@ array mongo_client::bson_to_array(mongo::BSONElement e) {
 }
 
 
-object mongo_client::find(string ns, object query, optional<object> fields, optional<int> limit, optional<int> skip) {
-
-  mongo::BSONObj field_bson,query_bson = object_to_bson(query);
+object mongo_client::find(std::string const &ns, object query,
+    optional<int> limit, optional<int> skip, optional<object> fields)
+{
+  BSONObj field_bson,query_bson = object_to_bson(query);
 
   if (fields)
     field_bson = object_to_bson(*fields);
 
   boost::shared_ptr<mongo::DBClientCursor> cursor_ptr(connection_.query(
-    ns.to_string(),
+    ns,
     query_bson,
     limit.get_value_or(0),
     skip.get_value_or(0),
@@ -294,16 +301,60 @@ object mongo_client::find(string ns, object query, optional<object> fields, opti
   return create<cursor>(bf::make_vector(cursor_ptr));
 }
 
-void mongo_client::insert(string ns, object obj) {
-  mongo::BSONObj bson = object_to_bson(obj);
-  connection_.insert(ns.c_str(), bson);
+object mongo_client::find_one(std::string const &ns, object query,
+    optional<object> fields)
+{
+  BSONObj field_bson,query_bson = object_to_bson(query);
+
+  if (fields)
+    field_bson = object_to_bson(*fields);
+
+  BSONObj o = connection_.findOne(
+    ns,
+    query_bson,
+    fields ? &field_bson : 0
+  );
+
+  // TODO: do we need to check for $err here
+  return bson_to_object(o);
 }
 
-void mongo_client::update(string ns, object query, object obj, boost::optional<bool> upsert_) {
-  // WTF is upsert? its in the mongo C++ api
+
+void mongo_client::insert(std::string const &ns, object obj) {
+  connection_.insert(ns, object_to_bson(obj));
 }
 
-void mongo_client::remote(string ns, object query, boost::optional<bool> just_one_) {
+void mongo_client::update(std::string const &ns, object query,
+    object obj, optional<bool> upsert, optional<bool> multi)
+{
+  // WTF is upsert? its in the mongo C++ api. update-or-insert it turns out
+  connection_.update(
+    ns,
+    object_to_bson(query),
+    object_to_bson(obj),
+    upsert.get_value_or(false),
+    multi.get_value_or(false)
+  );
 }
 
-} // end anon namespace
+void mongo_client::remove(std::string const &ns, object query,
+    optional<bool> just_one_)
+{
+  connection_.remove(ns, object_to_bson(query), just_one_.get_value_or(false));
+}
+
+object mongo_client::get_dbs() {
+  std::list<std::string> dbs = connection_.getDatabaseNames();
+  return create<array>(dbs);
+}
+
+object mongo_client::get_collections(std::string const &ns) {
+  std::list<std::string> cols = connection_.getCollectionNames(ns);
+  return create<array>(cols);
+}
+
+bool mongo_client::exists(std::string const &ns) {
+  return connection_.exists(ns);
+}
+
+} // namespace mongodb_flusspferd
