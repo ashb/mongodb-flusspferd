@@ -1,6 +1,5 @@
 
 #include "mongodb.hpp"
-#include "collection.hpp"
 #include "cursor.hpp"
 #include <flusspferd.hpp>
 #include <boost/foreach.hpp>
