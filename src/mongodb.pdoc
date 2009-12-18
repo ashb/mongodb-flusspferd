@@ -11,7 +11,7 @@
  *
  *  A MongoDB client connection.
  *
- *  Before getting started with MongoDB it is worth reading the 
+ *  Before getting started with MongoDB it is worth reading the
  *  MongoDB page on [schema design] to get a better idea about
  *  how to structure and store yourt data better: typically you will normalize
  *  your data less when using a document database when you would with a
@@ -48,7 +48,7 @@
  *      { j : {$in: [2,4,6]} } // j is a value in the given array
  *      { name : /acme.*corp/i } //
  *
- *  The full list of operators understood is:
+ *  The full list 'binary' of operators understood is:
  *
  *  - `$gt`: greater than
  *  - `$lt`: less than
@@ -64,10 +64,54 @@
  *  For regular expressions of the form `^normalchars.*` , the database
  *  will use an index when available and appropriate.
  *
- *  See the [mongodb_queries MongoDB documentation] for more details of how to
- *  do specify queries and for more advanced features.
+ *  See the [MongoDB documentation][queries] for more details of how to
+ *  do specify queries and for more [advanced features][adv_queries].
  *
- *  [mongodb_queries]: http://www.mongodb.org/display/DOCS/Queries+and+Cursors "Queries and Cursors"
+ *  ##### Values in an Array #
+ *
+ *  To look for a value in an array, simply do:
+ *
+ *      .find(ns, { field: "our value" })
+ *
+ *  would match the document
+ *
+ *      { field: [ "other value", "our value"] }
+ *
+ *  ##### Values in an Embedded Object #
+ *
+ *  Nested object literals in queries are _always_ treated as exact matches.
+ *  This means that
+ *
+ *      .find(ns, { author: { name: "Joe Blogger" } })
+ *
+ *  will only match if the author object contains just the name field.
+ *  (Replacing the 'name' with a regexp in the above query would only match
+ *  when there is a regexp stored.) To match against partial sub-objects, or to
+ *  match using a regexp, use dot-notation:
+ *
+ *      .find(ns, { "author.name": "Joe Blogger" })
+ *
+ *  ##### Complex expressions #
+ *
+ *  If you wish to filter on more complex expressions than can be achieved with
+ *  the query object, you can evaluate conditions on the server using
+ *  javascript. You do this by passing a string or a function in the `$where`
+ *  field of the query
+ *
+ *      .find(ns, { $where: "this.a > 3" })
+ *      .find(ns, { $where: function(x) { return x.a > 3 }});
+ *
+ *  In the code, `this` is bound to the document in question.
+ *
+ *  It is worth noting that this is considerably slower for large collections
+ *  than the more direct query syntax, so only use if it you have to.
+ *
+ *  See [here][sscode] for more information on using `$where` and otherwise
+ *  running code on the server.
+ *
+ *  [queries]: http://www.mongodb.org/display/DOCS/Queries+and+Cursors "Queries and Cursors"
+ *  [adv_queries]: http://www.mongodb.org/display/DOCS/Advanced+Queries
+ *  [sscode]: http://www.mongodb.org/display/DOCS/Server-side+Code+Execution
  **/
 
 /**
@@ -86,6 +130,15 @@
  *  - object (Object): what to insert into the collection
  *
  *  Store `object` in the collection `ns`.
+ *
+ *  Each document stored in a MongoDB collection must have a unique object id,
+ *  stored in its `_id` property.  If the object does not already have an `_id`
+ *  property the database will create a new [[MongoDB.OID]] id for the object
+ *  upon insert.
+ *
+ *  Object ids can be of any type so long as they are unique across the entire
+ *  collection. For instance a `users` collection could store usernames in the
+ *  `_id` property quite happily (assuming of course the usernames are unique.)
  **/
 
 /**
@@ -106,7 +159,7 @@
  *
  *  Modifier operations are performance enhancement techniques useful when
  *  updating an existing object in certain ways, such as incrementing a number.
- *  
+ *
  *
  *  - `{ $inc: { field: value } }`
  *  : increments `field` by the number value if `field` is present in the object,
@@ -115,7 +168,7 @@
  *  : sets `field` to `value`. All datatypes are supported with $set.
  *  - `{ $push: { field: value } }`
  *  : appends `value` to `field`, if `field` is an existing array, otherwise
- *    sets `field` to the array [value] if field is not present. If field is
+ *    sets `field` to the array `[value]` if field is not present. If field is
  *    present but is not an array, an error condition is raised.
  *  - `{ $pushAll: { field: array } }`
  *  : similarly to `$push`, but push multiple values at once.
@@ -125,13 +178,13 @@
  *  : removes the first element in the array `field`.
  *  - `{ $pull: { field: value } }`
  *  : removes all occurrences of `value` from `field` if it is an array. If
- *    `field` is present but is not an array, an error condition is raised. 
+ *    `field` is present but is not an array, an error condition is raised.
  *  - `{ $pullAll: { field: array } }`
  *  : similarl to `$pull`, but remove all occurrences of each value in `array`.
  *
  *  You may use upsert with a modifier operation. In such a case, the modifiers
  *  will be applied to the update criteria member and the resulting object will
- *  be inserted. 
+ *  be inserted.
  *
  *  ##### Checking the Outcome of an Update Request #
  *
@@ -139,15 +192,32 @@
  *  object. An upsert will either modify an existing object or insert a new
  *  object. The client may determine if its most recent message on a connection
  *  updated an existing object, by subsequently issuing a `getlasterror`
- *  command `findOne(ns, {getlasterror:1} )`. If the result of the
- *  `getlasterror` command contains an `updatedExisting` field, the last
- *  message on the connection was an update request. If the `updatedExisting`
- *  field's value is true, that update request caused an existing object to be
- *  updated; if `updatedExisting` is false, no existing object was updated.
+ *  command:
+ *
+ *      .findOne(ns, {getlasterror:1} )
+ *
+ *  If the result of the `getlasterror` command contains an `updatedExisting`
+ *  field, the last message on the connection was an update request. If the
+ *  `updatedExisting` field's value is true, that update request caused an
+ *  existing object to be updated; if `updatedExisting` is false, no existing
+ *  object was updated.
  **/
 
 /**
- *  MongoDB#remove() -> undefined
+ *  MongoDB#remove(ns[, query[, justOne=false]]) -> undefined
+ *  - ns (String): "db.collection"
+ *  - query (Object): query criteria
+ *  - justOne (Boolean): delete only the first matching document
+ *
+ *  Delete documents matching the provided query (or all documents if no query
+ *  is provided.) if `justOne` is true, then only the first matching document
+ *  will be deleted, otherwise all documents that match the query criteria will
+ *  be deleted.
+ *
+ *  If you have retrieved a document and you wish to delete it, best way is to
+ *  specify its `_id` property:
+ *
+ *      .delete(ns, {_id, myObj._id});
  **/
 
 /**
@@ -176,8 +246,8 @@
  *    commands
  *  - command (Object): command object to execute.
  *
- *  Run a command against the server. See [MongoDB docs][mongo_command] for a
- *  full list of database commands.
+ *  Run a command against the server. See the [MongoDB docs][mongo_command] for
+ *  a full list of database commands and return formats
  *
  *  [mongo_command]: http://www.mongodb.org/display/DOCS/List+of+Database+Commands
  **/
@@ -333,7 +403,7 @@
 /** section: exports
  *  class MongoDB.OID
  *
- *  A wrapper around a mongodb ObjectId. 
+ *  A wrapper around a mongodb ObjectId.
  *
  *  Most objects that get stored in MongoDB will have an OID allocated to them
  *  and stored in the `_id` field if there is no ID present.
