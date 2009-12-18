@@ -40,27 +40,27 @@ public:
 
   void close();
 
-  object find(std::string const &ns, flusspferd::object query,
+  object find(flusspferd::value ns, flusspferd::object query,
               boost::optional<int> limit, boost::optional<int> skip,
               boost::optional<flusspferd::object> fields);
 
-  object find_one(std::string const &ns, flusspferd::object query,
+  object find_one(flusspferd::value ns, flusspferd::object query,
               boost::optional<flusspferd::object> fields);
 
-  void insert(std::string const &ns, flusspferd::object obj);
+  void insert(flusspferd::value ns, flusspferd::object obj);
 
-  void update(std::string const &ns, flusspferd::object query,
+  void update(flusspferd::value ns, flusspferd::object query,
               flusspferd::object obj, boost::optional<bool> upsert,
               boost::optional<bool> multi);
 
-  void remove(std::string const &ns, flusspferd::object query,
+  void remove(flusspferd::value ns, flusspferd::object query,
               boost::optional<bool> just_one);
 
   object get_dbs();
-  object get_collections(std::string const &ns);
-  bool exists(std::string const &ns);
+  object get_collections(flusspferd::value ns);
+  bool exists(flusspferd::value ns);
 
-  object run_cmd(std::string const &db, object cmd);
+  object run_cmd(flusspferd::value db, object cmd);
 protected:
   mongo::DBClientConnection connection_;
 

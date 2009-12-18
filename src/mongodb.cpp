@@ -16,6 +16,14 @@ using mongo::BSONObj;
 
 namespace  mongodb_flusspferd {
 
+static std::string get_ns(value &v) {
+  if (v.is_undefined_or_null())
+    throw exception("namespace (first argument) cannot be null or undefined");
+
+  string s = v.to_string();
+  return s.to_string();
+}
+
 static const format oid_to_str_fmt_("MongoDB.OID('%1%')");
 static const format oid_to_source_fmt_("require('mongodb').OID('%1%')");
 
@@ -279,9 +287,10 @@ array mongo_client::bson_to_array(mongo::BSONElement e) {
 }
 
 
-object mongo_client::find(std::string const &ns, object query,
+object mongo_client::find(value ns_, object query,
     optional<int> limit, optional<int> skip, optional<object> fields)
 {
+  std::string const &ns = get_ns(ns_);
   BSONObj field_bson,query_bson = object_to_bson(query);
 
   if (fields)
@@ -296,12 +305,16 @@ object mongo_client::find(std::string const &ns, object query,
     fields ? &field_bson : 0
   ));
 
+  if (!cursor_ptr)
+    return object();
+
   return create<cursor>(bf::make_vector(cursor_ptr));
 }
 
-object mongo_client::find_one(std::string const &ns, object query,
+object mongo_client::find_one(value ns_, object query,
     optional<object> fields)
 {
+  std::string const &ns = get_ns(ns_);
   BSONObj field_bson,query_bson = object_to_bson(query);
 
   if (fields)
@@ -313,18 +326,24 @@ object mongo_client::find_one(std::string const &ns, object query,
     fields ? &field_bson : 0
   );
 
-  // TODO: do we need to check for $err here
+  // Will return an empty bson object if nothing found
+  if (o.firstElement().eoo())
+    return object();
+
   return bson_to_object(o);
 }
 
 
-void mongo_client::insert(std::string const &ns, object obj) {
+void mongo_client::insert(value ns_, object obj) {
+  std::string const &ns = get_ns(ns_);
   connection_.insert(ns, object_to_bson(obj));
 }
 
-void mongo_client::update(std::string const &ns, object query,
+void mongo_client::update(value ns_, object query,
     object obj, optional<bool> upsert, optional<bool> multi)
 {
+  std::string const &ns = get_ns(ns_);
+
   connection_.update(
     ns,
     object_to_bson(query),
@@ -334,9 +353,10 @@ void mongo_client::update(std::string const &ns, object query,
   );
 }
 
-void mongo_client::remove(std::string const &ns, object query,
+void mongo_client::remove(value ns_, object query,
     optional<bool> just_one_)
 {
+  std::string const &ns = get_ns(ns_);
   connection_.remove(ns, object_to_bson(query), just_one_.get_value_or(false));
 }
 
@@ -345,16 +365,19 @@ object mongo_client::get_dbs() {
   return create<array>(dbs);
 }
 
-object mongo_client::get_collections(std::string const &ns) {
+object mongo_client::get_collections(value ns_) {
+  std::string const &ns = get_ns(ns_);
   std::list<std::string> cols = connection_.getCollectionNames(ns);
   return create<array>(cols);
 }
 
-bool mongo_client::exists(std::string const &ns) {
+bool mongo_client::exists(value ns_) {
+  std::string const &ns = get_ns(ns_);
   return connection_.exists(ns);
 }
 
-object mongo_client::run_cmd(std::string const &db, object cmd) {
+object mongo_client::run_cmd(value db_, object cmd) {
+  std::string const &db = get_ns(db_);
   BSONObj out;
   connection_.runCommand(db, object_to_bson(cmd), out);
   return bson_to_object(out);
