@@ -190,9 +190,143 @@
  **/
 
 /**
- * MongoDB.Cursor#next() -> Object | null
+ *  MongoDB.Cursor#id -> Number
  *
- * Return the next document form the cursor, or `null` if none are left.
+ *  The id of this cursor.  Of little use outside of the library.
+ **/
+
+/**
+ *  MongoDB.Cursor#next() -> Object | null
+ *
+ *  Return the next document form the cursor, or `null` if none are left.
+ **/
+
+/**
+ *  MongoDB.Cursor#more() -> Boolean
+ *
+ *  Return true if there are more documents available to this cursor.
+ **/
+
+/**
+ *  MongoDB.Cursor#explain() -> Object
+ *
+ *  Get information about what indexs and scanning behaviours this cursor uses.
+ *
+ *  See [here][explain] for more information.
+ *
+ *  [explain]: http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
+ **/
+
+/**
+ *  MongoDB.Cursor#hint(keyPattern) -> MongoDB.Cursor
+ *  - keyPattern (Object): index hint to supply.
+ *
+ *  Specify index hint to MongoDB.
+ *
+ *  The MongoDB query optimizer usually does a good job, but sometimes explicit
+ *  "hints" can be useful, particularly when using `$where` queries or inline
+ *  functions.
+ *
+ *  See [here][hint] for more information.
+ *
+ *  [hint]: http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
+ **/
+
+/**
+ *  MongoDB.Cursor#min(cond) -> MongoDB.Cursor
+ *  - cond (Object): lower bound condition
+ *
+ *  Constrain the results to with in a provided range in conjunction with an
+ *  index. `MongoDB.Cursor#min` and [[MongoDB.Cursor#max]] may be used together
+ *  or singularly. If both are provided then logic is akin to this: `min <= x <
+ *  max`.
+ *
+ *  The index to be used may be specified with a hint() or one may be inferred
+ *  from pattern of the keys passed to min() and/or max().
+ *
+ *  See [here][min_max] for more information.
+ *
+ *  ##### Examples #
+ *
+ *      m.find(ns).min({name:"barry"}}.max({name:"larry"}).hint({name:1});
+ *      m.find(ns).min({name:"barry"}}.max({name:"larry"});
+ *      m.find(ns).min({last_name:"smith",first_name:"john"}};
+ *
+ *  [min_max]: http://www.mongodb.org/display/DOCS/min+and+max+Query+Specifiers
+ **/
+
+/**
+ *  MongoDB.Cursor#max(cond) -> MongoDB.Cursor
+ *  - cond (Object): upper bound condition
+ *
+ *  See [[MongoDB.Cursor#min]] for details.
+ **/
+
+/**
+ *  MongoDB.Cursor#snapshot() -> MongoDB.Cursor
+ *
+ *  Use snapshot mode for the query to guarantee no duplicates are returned.
+ *
+ *  Snapshot mode assures no duplicates are returned, or objects missed, which
+ *  were present at both the start and end of the query's execution (if an
+ *  object is new during the query, or deleted during the query, it may or may
+ *  not be returned, even with snapshot mode).
+ *
+ *  Note that short query responses (less than 1MB) are always effectively
+ *  snapshotted.
+ *
+ *  Currently, snapshot mode may not be used with sorting or explicit hints.
+ **/
+
+/**
+ *  MongoDB.Cursor#sort(field[, asc=1]) -> MongoDB.Cursor
+ *  MongoDB.Cursor#sort(sortPattern) -> MongoDB.Cursor
+ *  - field (String): field to sort on
+ *  - asc (Number): sort order. 1 for ascending, -1 for descending
+ *  - sortPattern (Object): multiple fields to sort by.
+ *
+ *  Change the sort order for a Cursor. `sortPattern` is an object whose keys
+ *  are the key names to sort on (like `field`) and with values of `1` or `-1`.
+ *
+ *  You may use `sort()` to return data in order without an index if the data
+ *  set to be returned is small (less than four megabytes). For these cases it
+ *  is best to use `limit` argument to [[MongoDB#find]] and `sort()` together.
+ *
+ *  ##### Examples #
+ *
+ *      .sort({name: 1, age: -1}) // 'name' ascending, then 'age' descending
+ *      .sort({"father.name": 1}) // sort by father.name property
+ *
+ *  ##### Natural Ordering #
+ *
+ *  When executing a `find()` with no parameters, the database returns objects in
+ *  forward natural order. For standard tables, natural order is not
+ *  particularly useful because, although the order is often close to insertion
+ *  order, it is not guaranteed to be. However, for Capped Collections, natural
+ *  order is guaranteed to be the insertion order. This can be very useful for
+ *  sorting.
+ *
+ *  ##### Examples #
+ *
+ *      .sort({$natural: -1}).limit(50) // 50 most recently inserted docs
+ *      .sort("$natural", -1).limit(50) // The same
+ *
+ *  [sorting]: http://www.mongodb.org/display/DOCS/Sorting
+ **/
+
+/**
+ *  MongoDB.Cursor#where(code, scope) -> MongoDB.Cursor
+ *  - code (String | Function): function to evaluate
+ *  - scope (Object): scope.
+ *
+ *  Queries to the Mongo database support a `$where` parameter option which
+ *  contains a javascript function that is evaluated to see whether objects
+ *  being queried match its criteria.
+ *
+ *  Use this helper to append such a function to a query object, or if you need
+ *  to run a function with particular objects in scope.
+ *
+ *  See [[MongoDB#find]] for more information.
  **/
 
 

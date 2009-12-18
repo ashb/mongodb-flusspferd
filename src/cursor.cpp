@@ -3,8 +3,7 @@
 #include "mongodb.hpp"
 
 using namespace flusspferd;
-
-namespace mongodb_flusspferd {
+using namespace mongodb_flusspferd;
 
 cursor::cursor(object const &obj, boost::shared_ptr<mongo::DBClientCursor> ptr)
   : base_type(obj),
@@ -13,6 +12,14 @@ cursor::cursor(object const &obj, boost::shared_ptr<mongo::DBClientCursor> ptr)
 }
 
 cursor::~cursor() {}
+
+int cursor::get_id() {
+  return cursor_->getCursorId();
+}
+
+bool cursor::more() {
+  return cursor_->more();
+}
 
 object cursor::next() {
   if (!cursor_->more())
@@ -31,4 +38,31 @@ object cursor::next() {
   return o;
 }
 
-} // namespace mongodb_flusspferd
+object cursor::explain() {
+  return object();
+}
+
+object cursor::hint() {
+  return object();
+}
+
+object cursor::min() {
+  return object();
+}
+
+object cursor::max() {
+  return object();
+}
+
+object cursor::snapshot() {
+  return object();
+}
+
+object cursor::sort() {
+  return object();
+}
+
+object cursor::where() {
+  return object();
+}
+
