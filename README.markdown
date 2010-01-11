@@ -1,16 +1,22 @@
 # Flusspferd bindings for MongoDB #
 
-To compile this module you'll need [Premake4][industriousone] and obviously
-[mongoDB][mongo_qs]. I'm making no guarantees that the compile will work without tweaking
-for everyone yet tho.
+To compile this module you'll need [Cmake 2.6.4+][cmake] (as required for
+building Flusspferd itself) and obviously [mongoDB][mongo_qs]. I'm making no
+guarantees that the compile will work without tweaking for everyone yet tho.
 
-    $ premake4 --mongodb-root=$HOME/code/assets/mongodb-osx-i386-2009-10-31/ gmake
-    $ make
+    $ cmake -H. -Bbuild
+
+If this fails to find the mongoDB library or header files you'll need to
+specify the directory containing `lib/libmongoclient.a` (or similar) and
+`include/mongo` by adding `-DMONGO_ROOT=/path/to/mongo` to the above cmake
+command.
+
+    $ make -C build
     $ flusspferd -Ibuild
     > mongodb = require('mongodb').MongoDB('localhost')
     ({})
     > quit();
-    $ flusspferd install.js
+    $ make -C build install
 
-[industriousone]: http://industriousone.com/premake
+[cmake]: http://www.cmake.org/cmake/resources/software.html
 [mongo_qs]: http://www.mongodb.org/display/DOCS/Quickstart "MongoDB Quick Start"
