@@ -8,7 +8,7 @@ guarantees that the compile will work without tweaking for everyone yet tho.
 
 If this fails to find the mongoDB library or header files you'll need to
 specify the directory containing `lib/libmongoclient.a` (or similar) and
-`include/mongo` by adding `-DMONGO_ROOT=/path/to/mongo` to the above cmake
+`include/mongo` by adding `-DMONGODB_ROOT=/path/to/mongo` to the above cmake
 command.
 
     $ make -C build
