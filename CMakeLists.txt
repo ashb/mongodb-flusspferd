@@ -8,14 +8,14 @@ include("${hippo_cmake}")
 SET(lib lib-NOTFOUND)
 SET(inc_dir inc_dir-NOTFOUND)
 
-find_path( inc_dir mongo/client/dbclient.h PATHS "${MONGODB_ROOT}/include")
+find_path( inc_dir mongo/client/dbclient.h "${MONGODB_ROOT}/include" )
 
-find_library( lib NAMES mongoclient PATHS "${MONGODB_ROOT}/lib")
+find_library( lib mongoclient "${MONGODB_ROOT}/lib" "${MONGODB_ROOT}/lib64" )
 
 if(NOT lib)
-  message(FATAL_ERROR "Unable to find mongoclient link library.\nPlease pass -DMONGO_ROOT=<dir>")
+  message(FATAL_ERROR "Unable to find mongoclient link library.\nPlease pass -DMONGODB_ROOT=<dir>")
 elseif(NOT inc_dir)
-  message(FATAL_ERROR "Unable to find mongo header files.\nPlease pass -DMONGO_ROOT=<dir>")
+  message(FATAL_ERROR "Unable to find mongo header files.\nPlease pass -DMONGODB_ROOT=<dir>")
 endif()
 
 add_definitions("-Wall")
