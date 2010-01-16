@@ -9,6 +9,7 @@
 
 namespace mongodb_flusspferd {
 
+class mongo_client;
 
 FLUSSPFERD_CLASS_DESCRIPTION(
     cursor,
@@ -31,7 +32,10 @@ FLUSSPFERD_CLASS_DESCRIPTION(
     )
 ) {
 public:
-  cursor(flusspferd::object const &obj, boost::shared_ptr<mongo::DBClientCursor> ptr);
+
+  cursor(flusspferd::object const &obj, mongo_client *db_, 
+    flusspferd::string ns_, mongo::BSONObj query,
+    boost::optional<mongo::BSONObj> fields);
 
   ~cursor();
 
@@ -44,14 +48,25 @@ public:
   bool more();
   flusspferd::object explain();
   flusspferd::object hint();
-  flusspferd::object min();
-  flusspferd::object max();
+  flusspferd::object min(object key);
+  flusspferd::object max(object key);
   flusspferd::object snapshot();
-  flusspferd::object sort();
+  void sort(flusspferd::call_context &x);
   flusspferd::object where();
 protected:
+  mongo_client &db_;
+  flusspferd::string ns_;
+  mongo::Query query_;
+  boost::optional<mongo::BSONObj> fields_;
+  int limit_, skip_;
 
   boost::shared_ptr<mongo::DBClientCursor> cursor_;
+
+  // For the chain methods, assert cursor_ hasn't been generated yet
+  void assert_no_cursor();
+  boost::shared_ptr<mongo::DBClientCursor> mongo_cursor();
+
+  void trace(flusspferd::tracer &trc);
 };
 
 }

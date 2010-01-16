@@ -41,7 +41,6 @@ public:
   void close();
 
   object find(flusspferd::value ns, flusspferd::object query,
-              boost::optional<int> limit, boost::optional<int> skip,
               boost::optional<flusspferd::object> fields);
 
   object find_one(flusspferd::value ns, flusspferd::object query,
@@ -62,6 +61,7 @@ public:
 
   object run_cmd(flusspferd::value db, object cmd);
 protected:
+  friend class cursor;
   mongo::DBClientConnection connection_;
 
 };

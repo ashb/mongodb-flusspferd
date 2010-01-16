@@ -287,28 +287,19 @@ array mongo_client::bson_to_array(mongo::BSONElement e) {
 }
 
 
-object mongo_client::find(value ns_, object query,
-    optional<int> limit, optional<int> skip, optional<object> fields)
+object mongo_client::find(value ns_, object query, optional<object> fields)
 {
-  std::string const &ns = get_ns(ns_);
-  BSONObj field_bson,query_bson = object_to_bson(query);
+  // Check the NS is valud
+  get_ns(ns_);
+  BSONObj query_bson = object_to_bson(query);
+  boost::optional<BSONObj> f;
 
   if (fields)
-    field_bson = object_to_bson(*fields);
+    f = object_to_bson(*fields);
 
-  boost::shared_ptr<mongo::DBClientCursor> cursor_ptr(connection_.query(
-    ns,
-    query_bson,
-    limit.get_value_or(0),
-    skip.get_value_or(0),
-    // Empty object
-    fields ? &field_bson : 0
-  ));
-
-  if (!cursor_ptr)
-    return object();
-
-  return create<cursor>(bf::make_vector(cursor_ptr));
+  return create<cursor>(
+    bf::make_vector(this, ns_, query_bson, f )
+  );
 }
 
 object mongo_client::find_one(value ns_, object query,

@@ -28,11 +28,9 @@
  **/
 
 /**
- *  MongoDB#find(ns, query[, limit[, skip[, fields]]]) -> MongoDB.Cursor
+ *  MongoDB#find(ns, query[, fields]) -> MongoDB.Cursor
  *  - ns (String): namespace to query in the form of "db.collection.collection"
  *  - query (Object): query criteria
- *  - limit (Number): Only return `limit` documents (0 = unlimited)
- *  - skip (Number): Skip the first `skip` documents (0 = skip nothing)
  *  - fields (Object): select only certain fields
  *
  *  Perform a query against `ns` returning a cursor of results.
@@ -284,6 +282,8 @@
  *
  *  See [here][explain] for more information.
  *
+ *  *Not yet implemented.*
+ *
  *  [explain]: http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
  **/
 
@@ -296,6 +296,8 @@
  *  The MongoDB query optimizer usually does a good job, but sometimes explicit
  *  "hints" can be useful, particularly when using `$where` queries or inline
  *  functions.
+ *
+ *  *Not yet implemented.*
  *
  *  See [here][hint] for more information.
  *
@@ -346,6 +348,8 @@
  *  snapshotted.
  *
  *  Currently, snapshot mode may not be used with sorting or explicit hints.
+ *
+ *  *Not yet implemented.*
  **/
 
 /**
@@ -397,6 +401,8 @@
  *  to run a function with particular objects in scope.
  *
  *  See [[MongoDB#find]] for more information.
+ *
+ *  *Not yet implemented.*
  **/
 
 
