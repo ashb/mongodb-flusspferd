@@ -21,8 +21,19 @@ endif()
 add_definitions("-Wall")
 include_directories(${inc_dir})
 
+set(Boost_FIND_REQUIRED TRUE)
+find_package(Boost 1.40.0 COMPONENTS program_options)
+
+if(Boost_LIBRARY_DIRS)
+    link_directories(${Boost_LIBRARY_DIRS})
+    include_directories(${Boost_INCLUDE_DIR})
+else()
+    message(FATAL_ERROR "Boost libraries not found. Please set -DBOOST_ROOT or -DBOOST_LIBRARY_DIR manually.")
+endif()
+
+
 FILE(GLOB_RECURSE sources 
      "${CMAKE_SOURCE_DIR}/src/*.cpp" 
      "${CMAKE_SOURCE_DIR}/src/*.hpp" )
 
-flusspferd_plugin( "mongodb" SOURCES ${sources} LIBRARIES ${lib} )
+flusspferd_plugin( "mongodb" SOURCES ${sources} LIBRARIES ${lib} ${Boost_PROGRAM_OPTIONS_LIBRARY} )
